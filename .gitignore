@@ -1,0 +1,60 @@
+# --- Entorno virtual ---
+venv/
+.venv/
+
+# --- Cachés de Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pye
+
+# --- Archivos de build ---
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# --- Configuración de herramientas ---
+*.log
+*.pot
+*.pyproj
+*.coverage
+.coverage.*
+.cache/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+ruff.toml
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- Entornos y configuraciones ---
+.env
+.env.*
+*.env
+*.ini
+*.cfg
+
+# --- Herramientas de empaquetado ---
+pip-wheel-metadata/
+wheels/
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Otros ---
+*.sqlite3
+*.db
+.DS_Store
+thumbs.db
+
+# --- Poetry ---
+poetry.lock
+
