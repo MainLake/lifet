@@ -1,6 +1,5 @@
 from lifet.coder.coder_protocol import CoderProtocol
 from lifet.coder.llm_adapters.llm_adapter_protocol import LLMAdapterProtocol, RequestLLM, ResponseLLM
-from lifet.coder.llm_adapters.system_promt_llm import SYSTEM_PROMT_LLM
 from lifet.tools.tool_prototipe import ToolPrototipe
 
 # Definimos colores simples para la consola
@@ -31,13 +30,7 @@ class Coder(CoderProtocol):
         print("-" * 60)
 
         # Contexto de sistema para el llm
-        system_context = {
-            "system_prompt": SYSTEM_PROMT_LLM,
-            "tools_available": self.get_tools_description()
-        }
-
-        # Agregamos el contexto del sistama a lo que ya viene en la request
-        request.request_system_data += "\n" + str(system_context)
+        request.request_system_data
 
         # Variable de control de finalizacion de tarea
         end_task = False
@@ -69,6 +62,7 @@ class Coder(CoderProtocol):
 
             # Llamada al LLM
             responseLLM = self.llm_adapter.generate_content(request)
+            print("ResponseLLM: ", responseLLM)
             
             # 2. VISUALIZACIÓN DEL PENSAMIENTO (REASONING)
             if responseLLM.reasoning:

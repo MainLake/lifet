@@ -8,6 +8,7 @@ class CallToolLLM(BaseModel):
 class RequestLLM(BaseModel):
     request_system_data: str
     request_user: str
+    json_schema: dict
 
 class ResponseLLM(BaseModel):
     reasoning: str
