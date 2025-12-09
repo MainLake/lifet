@@ -6,7 +6,7 @@ from lifet.coder.llm_adapters.llm_adapter_protocol import RequestLLM
 
 
 config = LLMConfig(
-    api_key="AIzaSyBsfiqIGdD6Z1t0Ijy3sC95NGKD67vOJtk",
+    api_key="AIzaSyC8w3p3FtrPCZteQrYvyamVzbCk_S0smhY",
     model_name="gemini-2.5-flash",
 )
 
