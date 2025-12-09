@@ -1,0 +1,3 @@
+
+class LifetError(Exception):
+    pass

@@ -22,7 +22,8 @@ task = RequestLLM(
     request_system_data=generate_system_prompt_llm(response_schema=get_response_schema_str(), so_info=get_info_so_json(), tools_description=coder.get_tools_description()),
     request_user="""
     Haz commit de los cambios que se han realizado en el proyecto ~/projects/lifet/ usa el estandar de conventional commits para realizar los commits, ademas de eso
-    revisa el .gitignore del proyecto para agregar aquellas cosas que no son relevantes para el proyecto como archivos de cache etc
+    revisa el .gitignore del proyecto para agregar aquellas cosas que no son relevantes para el proyecto como archivos de cache etc, agrega tambien a la gitignore eso 
+    del __pycache__ ya que no es algo que deba de mandar a el repositorio
     """,
     json_schema={}
 )
