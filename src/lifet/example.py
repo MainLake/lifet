@@ -9,7 +9,7 @@ from lifet.utils.objects import object_to_json
 from lifet.utils.utils_so import get_info_so_json
 
 config = LLMConfig(
-    api_key="sk-9d5a46c9960a40089e0fface17047192",
+    api_key="",
     model_name="deepseek-chat"
 )
 
