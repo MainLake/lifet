@@ -1,4 +1,3 @@
-
 from lifet.tools.tool_prototipe import ToolPrototipe
 from lifet.tools.tool_prototipe import ToolResponse
 

@@ -1,7 +1,8 @@
 from lifet.coder.coder_protocol import CoderProtocol
 from lifet.coder.llm_adapters.llm_adapter_protocol import LLMAdapterProtocol, RequestLLM, ResponseLLM
-from lifet.coder.llm_adapters.system_promt_llm import SYSTEM_PROMT_LLM
+from lifet.coder.llm_adapters.system_promt_llm import SYSTEM_PROMT_LLM, SYSTEM_PROMT_LLM_BB
 from lifet.tools.tool_prototipe import ToolPrototipe
+
 
 # Definimos colores simples para la consola
 class Colors:
@@ -13,6 +14,7 @@ class Colors:
     RED = '\033[91m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
+
 
 class Coder(CoderProtocol):
 
@@ -32,7 +34,7 @@ class Coder(CoderProtocol):
 
         # Contexto de sistema para el llm
         system_context = {
-            "system_prompt": SYSTEM_PROMT_LLM,
+            "system_prompt": SYSTEM_PROMT_LLM_BB,
             "tools_available": self.get_tools_description()
         }
 

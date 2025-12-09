@@ -4,6 +4,7 @@ from lifet.coder.llm_adapters.llm_adapter_protocol import RequestLLM, ResponseLL
 from google import genai
 import json
 import re
+import xml.etree.ElementTree as ET
 
 
 class GeminiAdapter(LLMAdapterProtocol):
@@ -26,9 +27,8 @@ class GeminiAdapter(LLMAdapterProtocol):
             raise ValueError("No response from Gemini API")
 
         try:
-    
-
-            parser_text_to_dict = json.loads(self.clean_response(request_llm.text))
+            #parser_text_to_dict = json.loads(self.clean_response(request_llm.text))
+            parser_text_to_dict = self.parse_dict(request_llm.text)
 
             new_response_llm = ResponseLLM(
                 reasoning=parser_text_to_dict.get("reasoning", ""),
@@ -75,3 +75,32 @@ class GeminiAdapter(LLMAdapterProtocol):
             # (Nota: Usa el FIX 3 con cuidado, a veces rompe el formato bonito si no es dentro de strings)
 
             return clean_text
+    
+    def parse_dict(self, xml_text: str) -> dict:
+        print(xml_text)
+        tree = ET.fromstring(xml_text)
+
+        reasoning = tree.find('reasoning').text.strip()
+        response = tree.find('response').text.strip()
+
+        task_end_str = tree.find('task_end').text.strip().lower()
+        task_end = True if task_end_str == 'true' else False
+
+        tools = []
+        
+        for tool in tree.findall('tool_calls/tool'):
+            tname = tool.find('tool_name').text.strip()
+            command_text = tool.find('arguments/command').text.strip()
+            tools.append({
+                "tool_name": tname,
+                "arguments": {
+                    "command": command_text
+                }
+            })
+
+        return {
+            "reasoning": reasoning,
+            "response": response,
+            "tool_calls": tools,
+            "task_end": task_end
+        }

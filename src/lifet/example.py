@@ -6,15 +6,15 @@ from lifet.coder.llm_adapters.llm_adapter_protocol import RequestLLM
 
 
 config = LLMConfig(
-    api_key="AIzaSyBsfiqIGdD6Z1t0Ijy3sC95NGKD67vOJtk",
+    api_key="AIzaSyDry19Zoz6QiepE1yAEM1Mh6xN6u67ygmg",
     model_name="gemini-2.5-flash",
 )
 
 task = RequestLLM(
     request_system_data="Eres un asistente de programacion que ayuda a crear codigo y ejecutar herramientas del sistema.",
     request_user="""
-    Necesito que para el proyecto que esta en la ruta ~/projects/task_manager/ agreges animaciones al agregar tareas
-    completar tareas o eliminarlas. usa css para agregar las animaciones.
+    Me gusta, pero ahora quiero que el fondo también sea de solores LGBTQ+ ademas que le pongas 
+    texto que haga referencia a eso, los archivos son login.html y style.css en la carpeta /home/projects
     """
 )
 

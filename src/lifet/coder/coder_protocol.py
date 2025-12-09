@@ -4,6 +4,7 @@ from lifet.coder.llm_adapters.llm_adapter_protocol import RequestLLM, ResponseLL
 from lifet.coder.llm_adapters.llm_adapter_protocol import LLMAdapterProtocol
 from lifet.tools.tool_prototipe import ToolPrototipe
 
+
 class CoderProtocol(ABC):
 
     tools: list[ToolPrototipe] = []
