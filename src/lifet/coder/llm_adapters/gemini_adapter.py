@@ -98,7 +98,7 @@ class GeminiAdapter(LLMAdapterProtocol):
         text_end: str, 
         text: str, 
         first_only: bool = True
-    ) -> str:
+    ) -> str | list[str]:
         lines = []
         found = False
         
