@@ -28,8 +28,24 @@ class GeminiAdapter(LLMAdapterProtocol):
 
         try:
             #parser_text_to_dict = json.loads(self.clean_response(request_llm.text))
-            parser_text_to_dict = self.parse_dict(request_llm.text)
+            #parser_text_to_dict = self.parse_dict(request_llm.text)
+            response = request_llm.text
+            a = self.find_chunck("--TOOLNAME--", "--ENDTOOLNAME--", response, False)
+            b = self.find_chunck("--COMMAND--", "--ENDCOMMAND--", response, False)
 
+            parser_text_to_dict = {
+                "reasoning": self.find_chunck("--REASONING--", "--ENDREASONING--", response), 
+                "response": self.find_chunck("--RESPONSE--", "--ENDRESPONSE--", response),
+                "tool_calls": [
+                    {
+                        "tool_name": k, 
+                        "arguments": {
+                            "command": v
+                        }
+                    } for k, v in zip(a, b)
+                ]
+            }
+            
             new_response_llm = ResponseLLM(
                 reasoning=parser_text_to_dict.get("reasoning", ""),
                 response=parser_text_to_dict.get("response", ""),
@@ -76,31 +92,34 @@ class GeminiAdapter(LLMAdapterProtocol):
 
             return clean_text
     
-    def parse_dict(self, xml_text: str) -> dict:
-        print(xml_text)
-        tree = ET.fromstring(xml_text)
-
-        reasoning = tree.find('reasoning').text.strip()
-        response = tree.find('response').text.strip()
-
-        task_end_str = tree.find('task_end').text.strip().lower()
-        task_end = True if task_end_str == 'true' else False
-
-        tools = []
+    def find_chunck(
+        self, 
+        text_start: str, 
+        text_end: str, 
+        text: str, 
+        first_only: bool = True
+    ) -> str:
+        lines = []
+        found = False
         
-        for tool in tree.findall('tool_calls/tool'):
-            tname = tool.find('tool_name').text.strip()
-            command_text = tool.find('arguments/command').text.strip()
-            tools.append({
-                "tool_name": tname,
-                "arguments": {
-                    "command": command_text
-                }
-            })
+        for line in text.splitlines():
+            cleaned_line = line.strip()
+        
+            if cleaned_line == "":
+                continue
+            
+            if cleaned_line.startswith(text_start):
+                found = True
+                continue
+                
+            if found:
+                if cleaned_line.startswith(text_end):
+                    found = False
+                    
+                    if first_only: 
+                        break
+                
+                else:
+                    lines.append(cleaned_line)
 
-        return {
-            "reasoning": reasoning,
-            "response": response,
-            "tool_calls": tools,
-            "task_end": task_end
-        }
+        return "".join(lines) if first_only else lines
