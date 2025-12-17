@@ -34,7 +34,7 @@ Las herramientas son la forma de extender las capacidades del agente para intera
 
 ## Instalación
 
-Para comenzar, clona el repositorio e instala las dependencias requeridas:
+Para comenzar, clona el repositorio e instala las dependencias requeridas.
 
 ```bash
 # Se recomienda usar un entorno virtual
@@ -42,31 +42,51 @@ python -m venv .venv
 source .venv/bin/activate
 
 # Instalar dependencias
-pip install "pydantic>=2.12.5,<3.0.0" "google-genai>=1.53.0,<2.0.0" "openai>=2.9.0,<3.0.0"
+pip install "pydantic>=2.12.5,<3.0.0" "google-genai>=1.53.0,<2.0.0" "openai>=2.9.0,<3.0.0" "python-dotenv>=1.0.0,<2.0.0"
 ```
+
+## Configuración de Claves de API
+
+Para manejar las claves de API de forma segura, el framework utiliza un archivo `.env`.
+
+1.  **Crea un archivo `.env`**: Renombra el archivo `.env.example` a `.env`.
+2.  **Añade tus claves**: Abre el archivo `.env` y añade tus claves de API para los servicios que vayas a utilizar.
+
+    ```bash
+    # .env
+    DEEPSEEK_API_KEY="tu_clave_de_api_de_deepseek"
+    GEMINI_API_KEY="tu_clave_de_api_de_gemini"
+    ```
+
+El framework cargará automáticamente estas claves. **Nunca subas tu archivo `.env` a un repositorio de Git.**
 
 ## Cómo Usarlo
 
-El siguiente ejemplo demuestra cómo ensamblar y ejecutar un agente.
+El siguiente ejemplo demuestra cómo ensamblar y ejecutar un agente. El sistema cargará la clave de API desde tu archivo `.env`.
 
 ```python
 # main.py
 
 from lifet.coder.coder import Coder
 from lifet.coder.llm_adapters.deepseek_adapter import DeepSeekAdapter
-from lifet.coder.llm_adapters.config_llm import LLMConfig, get_response_schema_str
+from lifet.coder.llm_adapters.config_llm import LLMConfig
 from lifet.tools.shell_tool import ShellTool
 from lifet.coder.llm_adapters.llm_adapter_protocol import RequestLLM
-from lifet.coder.llm_adapters.system_promt_llm import generate_system_prompt_llm
 from lifet.memory.memory import InMemoryMemory
-from lifet.utils.utils_so import get_info_so_json
 
 # 1. Configurar el LLM
-# Reemplaza con tu clave de API real y el modelo deseado
+# La clave de API se cargará automáticamente desde tu archivo .env
 config = LLMConfig(
-    api_key="TU_CLAVE_DE_API",
-    model_name="deepseek-chat"
+    model_name="deepseek-chat",
+    service_name="deepseek"  # Especifica el servicio para cargar la clave correcta
 )
+
+# Opcional: También puedes pasar la clave directamente si lo prefieres
+# config = LLMConfig(
+#     model_name="deepseek-chat",
+#     service_name="deepseek",
+#     api_key="tu_clave_de_api_aqui"
+# )
 
 # 2. Instanciar los componentes principales
 adapter = DeepSeekAdapter(config_llm=config)
@@ -78,17 +98,12 @@ shell_tool = ShellTool()
 coder.tool_subscription([shell_tool])
 
 # 4. Preparar la solicitud inicial
-# El prompt del sistema proporciona contexto al agente
-system_prompt = generate_system_prompt_llm(
-    response_schema=get_response_schema_str(),
-    so_info=get_info_so_json(),
-    tools_description=coder.get_tools_description()
-)
-
+# El Coder ahora maneja internamente la generación de prompts complejos.
+# Solo necesitas proporcionar la solicitud directa del usuario.
 task = RequestLLM(
-    request_system_data=system_prompt,
+    request_system_data="", # Dejar vacío, gestionado por el Coder
     request_user="Lista todos los archivos en el directorio actual, incluyendo los ocultos.",
-    json_schema={} # Opcional: Para modelos que requieren un esquema JSON de salida específico
+    json_schema={} 
 )
 
 # 5. Ejecutar el agente

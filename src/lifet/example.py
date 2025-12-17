@@ -5,10 +5,12 @@ from lifet.tools.shell_tool import ShellTool
 from lifet.coder.llm_adapters.llm_adapter_protocol import RequestLLM
 from lifet.memory.memory import InMemoryMemory
 
-# 1. Configure the LLM
+# 1. Configure the LLM.
+# The API key will be automatically loaded from your .env file
+# (e.g., DEEPSEEK_API_KEY="your_key_here").
 config = LLMConfig(
-    api_key="sk-85f87a99f45c4fb3af6edd22e7503c81", # IMPORTANT: Add your API key here
-    model_name="deepseek-chat"
+    model_name="deepseek-chat",
+    service_name="deepseek" 
 )
 
 # 2. Instantiate the core components
