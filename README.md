@@ -60,9 +60,22 @@ Para manejar las claves de API de forma segura, el framework utiliza un archivo 
 
 El framework cargará automáticamente estas claves. **Nunca subas tu archivo `.env` a un repositorio de Git.**
 
-## Cómo Usarlo
+## Interfaz de Chat Interactivo (CLI)
 
-El siguiente ejemplo demuestra cómo ensamblar y ejecutar un agente. El sistema cargará la clave de API desde tu archivo `.env`.
+Para probar el agente de forma fácil e interactiva, puedes usar el CLI de chat.
+
+1.  **Asegúrate de tener tu archivo `.env` configurado** (como se explica en la sección anterior).
+2.  **Ejecuta el script `chat.py`**:
+
+    ```bash
+    python chat.py
+    ```
+
+Esto iniciará una sesión de chat en tu terminal donde podrás enviar peticiones al agente y ver sus respuestas en tiempo real. Para salir, escribe `exit` o `quit`.
+
+## Cómo Usarlo (Ejemplo de Script)
+
+Si prefieres no usar el chat interactivo, el siguiente ejemplo demuestra cómo ensamblar y ejecutar un agente en un script.
 
 ```python
 # main.py
@@ -150,7 +163,7 @@ Implementa el `LLMAdapterProtocol` para conectarte a un nuevo LLM. También nece
 
 ```python
 from lifet.coder.llm_adapters.llm_adapter_protocol import LLMAdapterProtocol, RequestLLM, ResponseLLM
-from lifet.coder.llm_adapters.response_cleaner import ResponseCleanerProtocol
+from lifet.utils.response_parser.response_cleaner import ResponseCleanerProtocol
 
 class MyCustomLLMAdapter(LLMAdapterProtocol):
     def __init__(self, api_key: str, response_cleaner: ResponseCleanerProtocol):
