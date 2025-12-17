@@ -1,17 +1,16 @@
 import json
 from lifet.coder.llm_adapters.config_llm import LLMConfig
-from lifet.coder.llm_adapters.llm_adapter_protocol import LLMAdapterProtocol
-from lifet.coder.llm_adapters.llm_adapter_protocol import RequestLLM, ResponseLLM
-from lifet.coder.llm_adapters.llm_adapter_protocol import CallToolLLM
+from lifet.coder.llm_adapters.llm_adapter_protocol import LLMAdapterProtocol, RequestLLM, ResponseLLM, CallToolLLM
+from lifet.coder.llm_adapters.response_cleaner import ResponseCleanerProtocol, GeminiJSONCleaner
 from openai import OpenAI
-import re
 
 class DeepSeekAdapter(LLMAdapterProtocol):
 
-    def __init__(self, config_llm: LLMConfig) -> None:
+    def __init__(self, config_llm: LLMConfig, response_cleaner: ResponseCleanerProtocol = None) -> None:
         super().__init__()
         self.config_llm = config_llm
         self.client = OpenAI(api_key=self.config_llm.api_key, base_url="https://api.deepseek.com")
+        self.response_cleaner = response_cleaner or GeminiJSONCleaner()
 
     def generate_content(self, request: RequestLLM) -> ResponseLLM:
         response_llm = self.client.chat.completions.create(
@@ -21,12 +20,6 @@ class DeepSeekAdapter(LLMAdapterProtocol):
                     "role": "system",
                     "content": request.request_system_data
                 },
-                # Implementacion de la memoria
-                {
-                    "role": "system",
-                    "content": ""
-                },
-                # Solicitud a realizar
                 {
                     "role": "user",
                     "content": request.request_user
@@ -38,7 +31,8 @@ class DeepSeekAdapter(LLMAdapterProtocol):
         if not response_llm.choices[0].message.content:
             raise Exception("Error al generar el contenido")
 
-        parse_response_dict: dict = json.loads(self.clean_response(response_llm.choices[0].message.content))
+        cleaned_response = self.response_cleaner.clean(response_llm.choices[0].message.content)
+        parse_response_dict: dict = json.loads(cleaned_response)
 
         response_llm_object = ResponseLLM(
             reasoning=parse_response_dict.get("reasoning", ""),
@@ -54,30 +48,3 @@ class DeepSeekAdapter(LLMAdapterProtocol):
         )
 
         return response_llm_object
-
-    def clean_response(self, response: str) -> str:
-            clean_text = response.strip()
-
-            # 1. Eliminar bloques Markdown
-            match = re.search(r"```(?:json)?\s*(.*)\s*```", clean_text, re.DOTALL)
-            if match:
-                clean_text = match.group(1)
-            
-            clean_text = clean_text.strip()
-
-            # 2. FIX 1: Convertir \' a ' 
-            # (JSON prohíbe escapar comillas simples, Python lo ama)
-            clean_text = clean_text.replace(r"\'", "'")
-
-            # 3. FIX 2 (NUEVO): Convertir \\" a \"
-            # El error actual: El LLM envió \\" (Backslash + Fin de string).
-            # Lo corregimos a \" (Comilla escapada dentro del string).
-            clean_text = clean_text.replace(r'\\"', r'\"')
-
-            # 4. FIX 3 (OPCIONAL PERO RECOMENDADO): Saltos de línea literales
-            # A veces el LLM da "Enter" dentro del string JSON en lugar de poner \n
-            # Esto elimina saltos de línea reales dentro del JSON para evitar otro error común.
-            # clean_text = clean_text.replace("\n", "\\n") 
-            # (Nota: Usa el FIX 3 con cuidado, a veces rompe el formato bonito si no es dentro de strings)
-
-            return clean_text

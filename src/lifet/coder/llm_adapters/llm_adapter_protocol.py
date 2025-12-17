@@ -24,9 +24,5 @@ class LLMAdapterProtocol(ABC):
     def generate_content(self, request: RequestLLM) -> ResponseLLM:
         pass
 
-    @abstractmethod
-    def clean_response(self, response: str) -> str:
-        pass
-
 
 
