@@ -2,183 +2,200 @@
 
 `lifet` es un framework de Python modular y extensible diseñado para construir agentes de IA autónomos. Proporciona una estructura clara para conectarse a Modelos de Lenguaje Grandes (LLMs), gestionar la memoria y extender las capacidades del agente con herramientas personalizadas.
 
-## Conceptos Clave
+## Características Principales
 
-El framework se construye alrededor de algunos componentes clave que trabajan juntos a través de la inyección de dependencias, lo que lo hace altamente desacoplado y fácil de modificar.
-
-### 1. El Coder
-El `Coder` es el orquestador central del agente. Gestiona el bucle de ejecución principal, se comunica con el LLM, maneja la ejecución de herramientas y administra el historial de la conversación a través del sistema de memoria.
-
-### 2. Adaptadores de LLM (LLM Adapters)
-Los adaptadores son responsables de comunicarse con APIs de LLM específicas. El framework utiliza un enfoque basado en protocolos, por lo que puedes agregar fácilmente soporte para cualquier LLM.
-
-- **`LLMAdapterProtocol`**: Una interfaz que define cómo el `Coder` interactúa con un LLM.
-- **Implementaciones**: Se proporcionan `GeminiAdapter` y `DeepSeekAdapter` como ejemplos.
-
-### 3. Memoria (Memory)
-El sistema de memoria está desacoplado del `Coder`, permitiéndote conectar diferentes estrategias de memoria.
-
-- **`MemoryProtocol`**: Una interfaz que define los métodos `save_memory` y `get_memory`.
-- **`InMemoryMemory`**: Una implementación simple en memoria que almacena el historial de la conversación en una lista. Puedes crear tus propios sistemas de memoria persistente (por ejemplo, basados en archivos o bases de datos) implementando el `MemoryProtocol`.
-
-### 4. Limpiadores de Respuesta (Response Cleaners)
-Las respuestas de los LLM a veces pueden ser desordenadas o estar envueltas en un formato no estándar. Los Limpiadores de Respuesta son clases pequeñas e inyectables que sanean la salida cruda de un LLM antes de que sea analizada.
-
-- **`ResponseCleanerProtocol`**: Una interfaz para limpiar cadenas de texto crudas.
-- **`GeminiJSONCleaner`**: Un limpiador estándar que elimina bloques de código markdown y corrige problemas comunes de formato JSON.
-
-### 5. Herramientas (Tools)
-Las herramientas son la forma de extender las capacidades del agente para interactuar con el mundo exterior (por ejemplo, ejecutar comandos de shell, buscar en la web, etc.).
-
-- **`ToolPrototipe`**: Una clase base para crear nuevas herramientas. Simplemente heredas de ella e implementas el método `execute`.
+- **Arquitectura basada en protocolos**: Componentes desacoplados y fácilmente intercambiables
+- **Sistema de memoria flexible**: Soporte para memoria en capas y resumen automático
+- **Herramientas extensibles**: Framework para crear y gestionar herramientas personalizadas
+- **Adaptadores LLM**: Soporte para múltiples proveedores de LLM
+- **Manejo de tokens**: Contadores de tokens para optimización de costos
+- **Callbacks**: Sistema de eventos para monitoreo y extensión
 
 ## Instalación
 
-Para comenzar, clona el repositorio e instala las dependencias requeridas.
-
 ```bash
-# Se recomienda usar un entorno virtual
-python -m venv .venv
-source .venv/bin/activate
+# Clonar el repositorio
+git clone <repo-url>
+cd lifet
 
 # Instalar dependencias
-pip install "pydantic>=2.12.5,<3.0.0" "google-genai>=1.53.0,<2.0.0" "openai>=2.9.0,<3.0.0" "python-dotenv>=1.0.0,<2.0.0"
+pip install -r requirements.txt
+
+# Instalar en modo desarrollo
+pip install -e .
 ```
 
-## Configuración de Claves de API
+## Estructura del Proyecto
 
-Para manejar las claves de API de forma segura, el framework utiliza un archivo `.env`.
+```
+lifet/
+├── src/lifet/
+│   ├── __init__.py          # Inicialización del paquete
+│   ├── coder/              # Núcleo del agente
+│   │   ├── coder.py        # Implementación principal del Coder
+│   │   ├── coder_protocol.py # Protocolo del Coder
+│   │   ├── coder_callbacks.py # Sistema de callbacks
+│   │   └── llm_adapters/   # Adaptadores para LLMs
+│   ├── tools/              # Sistema de herramientas
+│   │   ├── tool_prototipe.py # Protocolo base para herramientas
+│   │   ├── read_file_tool.py
+│   │   ├── write_file_tool.py
+│   │   ├── list_files_tool.py
+│   │   └── shell_tool.py
+│   ├── memory/             # Sistema de memoria
+│   │   ├── memory_protocol.py # Protocolo de memoria
+│   │   ├── memory.py       # Implementación base
+│   │   ├── layered_memory.py # Memoria en capas
+│   │   └── summarizing_memory.py # Memoria con resumen
+│   └── utils/              # Utilidades
+│       ├── error.py        # Manejo de errores
+│       ├── constants.py    # Constantes
+│       ├── utils_so.py     # Utilidades del sistema
+│       └── objects.py      # Objetos de datos
+├── tests/                  # Pruebas unitarias
+├── api/                    # API REST (opcional)
+└── chat.py                # Ejemplo de aplicación
+```
 
-1.  **Crea un archivo `.env`**: Renombra el archivo `.env.example` a `.env`.
-2.  **Añade tus claves**: Abre el archivo `.env` y añade tus claves de API para los servicios que vayas a utilizar.
+## Conceptos Clave
 
-    ```bash
-    # .env
-    DEEPSEEK_API_KEY="tu_clave_de_api_de_deepseek"
-    GEMINI_API_KEY="tu_clave_de_api_de_gemini"
-    ```
+### 1. El Coder
+El `Coder` es el orquestador central del agente. Implementa el protocolo `CoderProtocol` y gestiona:
+- Comunicación con el LLM a través de adaptadores
+- Ejecución de herramientas suscritas
+- Gestión del historial de conversación mediante el sistema de memoria
+- Procesamiento de respuestas y extracción de JSON
 
-El framework cargará automáticamente estas claves. **Nunca subas tu archivo `.env` a un repositorio de Git.**
+### 2. Adaptadores de LLM
+Los adaptadores (`LLMAdapterProtocol`) son responsables de comunicarse con APIs de LLM específicas:
+- `system_promt_llm.py`: Generación de prompts del sistema
+- `deepseek_token_counter.py`: Contador de tokens para DeepSeek
+- Protocolo base para implementar nuevos adaptadores
 
-## Interfaz de Chat Interactivo (CLI)
+### 3. Sistema de Herramientas
+Las herramientas (`ToolPrototipe`) extienden las capacidades del agente:
+- **Protocolo base**: Define la interfaz para todas las herramientas
+- **Herramientas incluidas**: Lectura/escritura de archivos, shell, listado de archivos
+- **Extensibilidad**: Fácil creación de herramientas personalizadas
 
-Para probar el agente de forma fácil e interactiva, puedes usar el CLI de chat.
+### 4. Sistema de Memoria
+La memoria (`MemoryProtocol`) gestiona el historial de conversación:
+- **Memoria en capas**: `LayeredMemory` para diferentes niveles de retención
+- **Memoria con resumen**: `SummarizingMemory` para compresión automática
+- **Protocolo flexible**: Interfaz para implementar nuevos sistemas de memoria
 
-1.  **Asegúrate de tener tu archivo `.env` configurado** (como se explica en la sección anterior).
-2.  **Ejecuta el script `chat.py`**:
-
-    ```bash
-    python chat.py
-    ```
-
-Esto iniciará una sesión de chat en tu terminal donde podrás enviar peticiones al agente y ver sus respuestas en tiempo real. Para salir, escribe `exit` o `quit`.
-
-## Cómo Usarlo (Ejemplo de Script)
-
-Si prefieres no usar el chat interactivo, el siguiente ejemplo demuestra cómo ensamblar y ejecutar un agente en un script.
+## Uso Básico
 
 ```python
-# main.py
+from lifet import Coder
+from lifet.coder.llm_adapters.system_promt_llm import SystemPromptLLMAdapter
+from lifet.memory.layered_memory import LayeredMemory
+from lifet.tools.read_file_tool import ReadFileTool
+from lifet.tools.write_file_tool import WriteFileTool
 
-from lifet.coder.coder import Coder
-from lifet.coder.llm_adapters.deepseek_adapter import DeepSeekAdapter
-from lifet.coder.llm_adapters.config_llm import LLMConfig
-from lifet.tools.shell_tool import ShellTool
-from lifet.coder.llm_adapters.llm_adapter_protocol import RequestLLM
-from lifet.memory.memory import InMemoryMemory
+# Configurar componentes
+llm_adapter = SystemPromptLLMAdapter()
+memory = LayeredMemory()
+tools = [ReadFileTool(), WriteFileTool()]
 
-# 1. Configurar el LLM
-# La clave de API se cargará automáticamente desde tu archivo .env
-config = LLMConfig(
-    model_name="deepseek-chat",
-    service_name="deepseek"  # Especifica el servicio para cargar la clave correcta
-)
+# Crear el agente
+agent = Coder(llm_adapter=llm_adapter, memory=memory)
+agent.tool_subscription(tools)
 
-# Opcional: También puedes pasar la clave directamente si lo prefieres
-# config = LLMConfig(
-#     model_name="deepseek-chat",
-#     service_name="deepseek",
-#     api_key="tu_clave_de_api_aqui"
-# )
-
-# 2. Instanciar los componentes principales
-adapter = DeepSeekAdapter(config_llm=config)
-memory = InMemoryMemory()
-coder = Coder(llm_adapter=adapter, memory=memory)
-
-# 3. Crear y suscribir herramientas
-shell_tool = ShellTool()
-coder.tool_subscription([shell_tool])
-
-# 4. Preparar la solicitud inicial
-# El Coder ahora maneja internamente la generación de prompts complejos.
-# Solo necesitas proporcionar la solicitud directa del usuario.
-task = RequestLLM(
-    request_system_data="", # Dejar vacío, gestionado por el Coder
-    request_user="Lista todos los archivos en el directorio actual, incluyendo los ocultos.",
-    json_schema={} 
-)
-
-# 5. Ejecutar el agente
-final_response = coder.code(task)
-
-if final_response:
-    print("El agente ha finalizado su tarea.")
-    print(f"Razonamiento Final: {final_response.reasoning}")
-    print(f"Respuesta Final: {final_response.response}")
+# Ejecutar una tarea
+response = agent.code("Lee el archivo README.md y resúmelo")
+print(response)
 ```
 
-## Extensibilidad
+## Ejemplo Completo
 
-### Creando una Nueva Herramienta
-Para crear una nueva herramienta, hereda de `ToolPrototipe` e implementa el método `execute`.
+Ver `chat.py` para un ejemplo completo de un agente conversacional con:
+- Conexión a LLM
+- Sistema de memoria persistente
+- Herramientas integradas
+- Interfaz de línea de comandos
 
+## Extensión del Framework
+
+### Crear una nueva herramienta
 ```python
-from lifet.tools.tool_prototipe import ToolPrototipe, ToolResult
+from lifet.tools.tool_prototipe import ToolPrototipe, ToolResponse
 
-class FileWriteTool(ToolPrototipe):
-    """Una herramienta para escribir contenido en un archivo."""
-
-    def execute(self, file_path: str, content: str) -> ToolResult:
-        """
-        Escribe el contenido dado en el archivo especificado.
-        
-        Args:
-            file_path: La ruta al archivo.
-            content: El contenido a escribir.
-        """
-        try:
-            with open(file_path, 'w') as f:
-                f.write(content)
-            return ToolResult(result=f"Se escribió correctamente en {file_path}")
-        except Exception as e:
-            return ToolResult(error=str(e))
-
-# Luego, suscríbela al coder:
-# coder.tool_subscription([ShellTool(), FileWriteTool()])
+class CustomTool(ToolPrototipe):
+    def __init__(self):
+        super().__init__(
+            tool_name="custom_tool",
+            description="Una herramienta personalizada",
+            parameters=["param1", "param2"]
+        )
+    
+    def execute(self, **kwargs) -> ToolResponse:
+        # Implementar lógica aquí
+        return ToolResponse(
+            success=True,
+            data={"result": "operación exitosa"}
+        )
 ```
 
-### Creando un Nuevo Adaptador de LLM
-Implementa el `LLMAdapterProtocol` para conectarte a un nuevo LLM. También necesitarás un `ResponseCleaner`.
-
+### Implementar un nuevo adaptador LLM
 ```python
 from lifet.coder.llm_adapters.llm_adapter_protocol import LLMAdapterProtocol, RequestLLM, ResponseLLM
-from lifet.utils.response_parser.response_cleaner import ResponseCleanerProtocol
 
-class MyCustomLLMAdapter(LLMAdapterProtocol):
-    def __init__(self, api_key: str, response_cleaner: ResponseCleanerProtocol):
+class CustomLLMAdapter(LLMAdapterProtocol):
+    def __init__(self, api_key: str):
         self.api_key = api_key
-        self.response_cleaner = response_cleaner
-        # ... inicializar cliente ...
-
-    def generate_content(self, request: RequestLLM) -> ResponseLLM:
-        # ... llamar a tu API de LLM personalizada ...
-        raw_response = "..." 
-        
-        # Limpiar la respuesta
-        cleaned_response = self.response_cleaner.clean(raw_response)
-        
-        # Analizar y devolver un objeto ResponseLLM
-        # ...
-        pass
+    
+    def request(self, request: RequestLLM) -> ResponseLLM:
+        # Implementar llamada a API
+        return ResponseLLM(
+            response="Respuesta del LLM",
+            token_count=100
+        )
 ```
+
+## API
+
+### Coder
+- `__init__(llm_adapter, memory)`: Inicializa el agente
+- `code(request)`: Procesa una solicitud y devuelve respuesta
+- `tool_subscription(tools)`: Suscribe herramientas al agente
+- `extract_json_from_text(text)`: Extrae JSON de texto (método estático)
+
+### MemoryProtocol
+- `add_interaction(interaction)`: Añade interacción al historial
+- `get_history()`: Obtiene historial completo
+- `clear()`: Limpia la memoria
+
+### ToolPrototipe
+- `execute(**kwargs)`: Ejecuta la herramienta
+- `validate_parameters(params)`: Valida parámetros de entrada
+
+## Pruebas
+
+Ejecutar las pruebas unitarias:
+```bash
+pytest tests/
+```
+
+Las pruebas cubren:
+- Funcionalidad del Coder
+- Sistema de memoria
+- Herramientas
+- Contadores de tokens
+- Chat y conversaciones
+
+## Contribución
+
+1. Fork el repositorio
+2. Crear una rama para la funcionalidad
+3. Implementar cambios con pruebas
+4. Asegurar que todas las pruebas pasen
+5. Crear Pull Request
+
+## Licencia
+
+[Incluir información de licencia]
+
+## Contacto
+
+[Información de contacto del mantenedor]

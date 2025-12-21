@@ -4,7 +4,7 @@ from typing import Literal
 
 class MemoryInteraction(BaseModel):
     """Represents a single interaction in the memory."""
-    role: Literal["user", "assistant", "system"]
+    role: Literal["user", "assistant", "system", "tool"]
     content: str
 
 class MemoryProtocol(ABC):

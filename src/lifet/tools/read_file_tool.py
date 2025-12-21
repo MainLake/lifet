@@ -12,8 +12,10 @@ class ReadFileTool(ToolPrototipe):
 
         Parameters
         ----------
-        file_path : str
+        file_path : str, optional
             The path to the file to read.
+        path : str, optional
+            An alternative argument for the file path.
 
         Returns
         -------
@@ -22,9 +24,9 @@ class ReadFileTool(ToolPrototipe):
                 - result (str): The content of the file.
                 - error (str | None): An error message if the file cannot be read.
         """
-        file_path = kwargs.get("file_path")
+        file_path = kwargs.get("file_path") or kwargs.get("path")
         if not file_path:
-            return ToolResponse(result="", error="No file_path provided")
+            return ToolResponse(result="", error="No file_path or path provided")
 
         try:
             with open(file_path, 'r', encoding='utf-8') as f:

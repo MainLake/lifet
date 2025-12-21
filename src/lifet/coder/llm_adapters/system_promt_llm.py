@@ -38,6 +38,14 @@ def generate_system_prompt_llm(
         "- `task_end`: `true` if the task is fully complete, `false` if you need to continue. Set to `true` on final success or unrecoverable failure. Set to `false` if you are calling a tool and need to see the result.",
     ]
 
+    prompt_parts.extend([
+        "\n**TASK COMPLETION GUIDE:**",
+        "1. **Gather Information:** Use tools like `ReadFileTool` and `ListFilesTool` to understand the current state of the codebase.",
+        "2. **Avoid Repetition:** Do not read the same file multiple times unless you have a specific reason.",
+        "3. **Perform Final Action:** Once you have enough information, perform the main action required by the user (e.g., using `WriteFileTool`).",
+        "4. **Conclude:** After performing the final action, set `task_end` to `true`."
+    ])
+
     if agent_persona:
         prompt_parts.extend([
             "\n[AGENT BEHAVIOR]",

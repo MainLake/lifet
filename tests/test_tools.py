@@ -24,6 +24,12 @@ class TestTools(unittest.TestCase):
         self.assertIsNone(response.error)
         self.assertEqual(response.result, self.test_content)
 
+    def test_read_file_tool_with_path_arg(self):
+        read_tool = ReadFileTool()
+        response = read_tool.execute(path=self.test_file)
+        self.assertIsNone(response.error)
+        self.assertEqual(response.result, self.test_content)
+
     def test_read_file_tool_not_found(self):
         read_tool = ReadFileTool()
         response = read_tool.execute(file_path="non_existent_file.txt")

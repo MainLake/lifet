@@ -21,7 +21,13 @@ class InMemoryMemory(MemoryProtocol):
         """
         formatted_memory = []
         for interaction in self.interactions:
-            formatted_memory.append(f"[{interaction.role.upper()}]\n{interaction.content}")
+            role_display = ""
+            if interaction.role == "tool":
+                role_display = "[TOOL_RESULT]"
+            else:
+                role_display = f"[{interaction.role.upper()}]"
+            
+            formatted_memory.append(f"{role_display}\n{interaction.content}")
         return "\n".join(formatted_memory)
 
     def trim_memory(self):
