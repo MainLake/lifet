@@ -1,19 +1,19 @@
-[project]
+[tool.poetry]
 name = "lifet"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Pablo Julian Garay de Leon",email = "leonmaing@gmail.com"}
-]
+authors = ["Pablo Julian Garay de Leon <leonmaing@gmail.com>"]
 readme = "README.md"
-requires-python = ">=3.10"
-dependencies = [
-    "pydantic (>=2.12.5,<3.0.0)",
-    "google-genai (>=1.53.0,<2.0.0)"
-]
-
-[tool.poetry]
 packages = [{include = "lifet", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+pydantic = ">=2.12.5,<3.0.0"
+google-generativeai = "^0.5.4"
+openai = "^1.35.13"
+prompt_toolkit = "^3.0.43"
+python-dotenv = "^1.0.1"
+rich = "^13.7.1"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

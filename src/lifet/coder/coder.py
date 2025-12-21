@@ -33,14 +33,12 @@ class Coder(CoderProtocol):
         
         so_info = get_info_so_json()
         tools_description = self.get_tools_description()
-        token_counter = self.llm_adapter.token_counter
 
         iteration_count = 0
         max_iterations = 10 
 
         while iteration_count < max_iterations:
             iteration_count += 1
-
             memory_context = self.memory.get_memory()
             
             current_system_prompt = generate_system_prompt_llm(
@@ -59,10 +57,15 @@ class Coder(CoderProtocol):
                 katas_rules=request.katas_rules
             )
 
-            prompt_tokens = token_counter.count_tokens(current_system_prompt + request.request_user)
+            try:
+                responseLLM = self.llm_adapter.generate_content(llm_request)
+                if responseLLM is None:
+                    raise ValueError("Received an empty response from the language model.")
+            except Exception as e:
+                error_message = f"Error during LLM call: {e}. The response was not valid. Please ensure the output is a single, valid JSON object and try again."
+                self.memory.save_memory(MemoryInteraction(role="system", content=error_message))
+                continue
 
-            responseLLM = self.llm_adapter.generate_content(llm_request)
-            
             assistant_content = []
             if responseLLM.reasoning:
                 assistant_content.append(f"Thought: {responseLLM.reasoning}")
@@ -83,14 +86,15 @@ class Coder(CoderProtocol):
                 for tool_call in responseLLM.tool_calls:
                     if tool_call.tool_name in self.tools:
                         tool_to_execute = self.tools[tool_call.tool_name]
-                        result = tool_to_execute.execute(**tool_call.arguments)
-
-                        if result.error:
-                            tool_results_content.append(f"Error from {tool_call.tool_name}: {result.error}")
-                        else:
-                            tool_results_content.append(f"Result of {tool_call.tool_name}: {result.result}")
+                        try:
+                            result = tool_to_execute.execute(**tool_call.arguments)
+                            if result.error:
+                                tool_results_content.append(f"Error from {tool_call.tool_name}: {result.error}")
+                            else:
+                                tool_results_content.append(f"Result of {tool_call.tool_name}: {result.result}")
+                        except Exception as e:
+                            tool_results_content.append(f"Fatal error executing tool {tool_call.tool_name}: {e}")
                     else:
-
                         error_msg = f"Error: Tool '{tool_call.tool_name}' not found or not subscribed."
                         tool_results_content.append(error_msg)
 

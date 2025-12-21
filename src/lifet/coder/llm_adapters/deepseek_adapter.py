@@ -2,15 +2,26 @@ import json
 from lifet.coder.llm_adapters.config_llm import LLMConfig
 from lifet.coder.llm_adapters.llm_adapter_protocol import LLMAdapterProtocol, RequestLLM, ResponseLLM, CallToolLLM
 from lifet.coder.llm_adapters.response_cleaner import ResponseCleanerProtocol, GeminiJSONCleaner
+from lifet.coder.llm_adapters.token_counter_protocol import TokenCounterProtocol
 from openai import OpenAI
 
 class DeepSeekAdapter(LLMAdapterProtocol):
 
-    def __init__(self, config_llm: LLMConfig, response_cleaner: ResponseCleanerProtocol = None) -> None:
+    def __init__(
+        self, 
+        config_llm: LLMConfig, 
+        token_counter: TokenCounterProtocol,
+        response_cleaner: ResponseCleanerProtocol = None
+    ) -> None:
         super().__init__()
         self.config_llm = config_llm
         self.client = OpenAI(api_key=self.config_llm.api_key, base_url="https://api.deepseek.com")
         self.response_cleaner = response_cleaner or GeminiJSONCleaner()
+        self._token_counter = token_counter
+
+    @property
+    def token_counter(self) -> TokenCounterProtocol:
+        return self._token_counter
 
     def generate_content(self, request: RequestLLM) -> ResponseLLM:
         response_llm = self.client.chat.completions.create(
