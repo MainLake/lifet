@@ -7,68 +7,62 @@ from lifet.utils.utils_so import get_info_so_json
 import json
 
 class Coder(CoderProtocol):
-
-    tools: list[ToolPrototipe] = []
+    """
+    The Coder class orchestrates the interaction between the user, the LLM, and the tools.
+    """
+    tools: dict[str, ToolPrototipe] = {}
 
     def __init__(self, llm_adapter: LLMAdapterProtocol, memory: MemoryProtocol) -> None:
         self.llm_adapter = llm_adapter
         self.memory = memory
 
     def tool_subscription(self, tools: list[ToolPrototipe]) -> None:
-        self.tools = tools
+        self.tools = {tool.__class__.__name__: tool for tool in tools}
 
     def get_tools_description(self) -> str:
         if not self.tools:
             return "No tools available."
+        
         description = "Available tools:\n"
-        for tool in self.tools:
-            description += f"- {tool.__class__.__name__}: {tool.__doc__}\n"
+        for name, tool in self.tools.items():
+            description += f"- {name}: {tool.__doc__}\n"
         return description
 
     def code(self, request: RequestLLM) -> ResponseLLM | None:
-        
-        print("=== INICIANDO AGENTE CODER ===")
-        print(f"Tools Loaded:")
-        for t in self.tools:
-            print(f"  └─ {t.__class__.__name__}")
-        print("-" * 60)
-
-        # Save user request to memory
         self.memory.save_memory(MemoryInteraction(role="user", content=request.request_user))
         
-        # Store the initial static parts of the system prompt from the original request
-        so_info = get_info_so_json() # Assuming this is static for the session
+        so_info = get_info_so_json()
         tools_description = self.get_tools_description()
+        token_counter = self.llm_adapter.token_counter
 
-        end_task = False
-        iteration_count = 1 
+        iteration_count = 0
+        max_iterations = 10 
 
-        while not end_task:
-            
-            print(f"\n>>> ITERACIÓN #{iteration_count}")
+        while iteration_count < max_iterations:
+            iteration_count += 1
 
-            # Get memory and generate the full system prompt for this iteration
             memory_context = self.memory.get_memory()
             
             current_system_prompt = generate_system_prompt_llm(
-                response_schema=None, # Not used in the optimized prompt
                 so_info=so_info,
                 tools_description=tools_description,
-                history=memory_context
+                history=memory_context,
+                agent_persona=request.agent_persona,
+                katas_rules=request.katas_rules
             )
             
-            # Create a new request for the LLM for this iteration
             llm_request = RequestLLM(
                 request_system_data=current_system_prompt,
-                request_user=request.request_user, # The original user request is passed for context
-                json_schema=request.json_schema
+                request_user=request.request_user,
+                json_schema=request.json_schema,
+                agent_persona=request.agent_persona,
+                katas_rules=request.katas_rules
             )
 
-            # Llamada al LLM
+            prompt_tokens = token_counter.count_tokens(current_system_prompt + request.request_user)
+
             responseLLM = self.llm_adapter.generate_content(llm_request)
-            print("ResponseLLM: ", responseLLM)
             
-            # Save assistant response to memory in a compact format
             assistant_content = []
             if responseLLM.reasoning:
                 assistant_content.append(f"Thought: {responseLLM.reasoning}")
@@ -79,55 +73,28 @@ class Coder(CoderProtocol):
                 assistant_content.append(f"Response: {responseLLM.response}")
 
             if assistant_content:
-                self.memory.save_memory(MemoryInteraction(role="assistant", content="\n".join(assistant_content)))
+                self.memory.save_memory(MemoryInteraction(role="assistant", content=" ".join(assistant_content)))
 
-            if responseLLM.reasoning:
-                print(f"🧠 Reasoning: {responseLLM.reasoning}")
-            
-            if responseLLM.response:
-                print(f"🗣️  Response: {responseLLM.response}")
-
-            end_task = responseLLM.task_end
-
-            if end_task:
-                print("\n=== TAREA FINALIZADA ===")
+            if responseLLM.task_end:
                 return responseLLM
             
             if responseLLM.tool_calls:
-                print(f"\n🛠️  TOOL CALLS DETECTED ({len(responseLLM.tool_calls)})")
-                
                 tool_results_content = []
-                for tool in responseLLM.tool_calls:
-                    tool_found = False
-                    for tool_available in self.tools:
-                        if tool_available.__class__.__name__ == tool.tool_name:
-                            tool_found = True
-                            print(f"   ⚡ Executing: {tool.tool_name}")
-                            print(f"      Args: {tool.arguments}")
-                            
-                            result = tool_available.execute(**tool.arguments)
+                for tool_call in responseLLM.tool_calls:
+                    if tool_call.tool_name in self.tools:
+                        tool_to_execute = self.tools[tool_call.tool_name]
+                        result = tool_to_execute.execute(**tool_call.arguments)
 
-                            if result.error:
-                                print(f"      ❌ Error: {result.error}")
-                                tool_results_content.append(f"Error from {tool.tool_name}: {result.error}")
-                            else:
-                                output_display = str(result.result)
-                                if len(output_display) > 200:
-                                    output_display = output_display[:200] + "... [truncated]"
-                                
-                                print(f"      ✅ Result: {output_display}")
-                                tool_results_content.append(f"Result of {tool.tool_name}: {result.result}")
-                            break 
-                    if not tool_found:
-                        error_msg = f"Error: Tool '{tool.tool_name}' not found or not subscribed."
-                        print(f"      ❌ {error_msg}")
+                        if result.error:
+                            tool_results_content.append(f"Error from {tool_call.tool_name}: {result.error}")
+                        else:
+                            tool_results_content.append(f"Result of {tool_call.tool_name}: {result.result}")
+                    else:
+
+                        error_msg = f"Error: Tool '{tool_call.tool_name}' not found or not subscribed."
                         tool_results_content.append(error_msg)
 
                 if tool_results_content:
-                    self.memory.save_memory(MemoryInteraction(role="system", content="\n".join(tool_results_content)))
+                    self.memory.save_memory(MemoryInteraction(role="system", content=" ".join(tool_results_content)))
                             
-            iteration_count += 1
-            print(f"{'-'*40}")
-
-        print('\n\n')
         return None
