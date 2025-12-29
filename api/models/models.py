@@ -1,37 +1,47 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from database import Base  
+from Database.database import Base  
 
 class User(Base):
-    __tablename__="User"
+    __tablename__ = "users" 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True,index=True)
-    email = Column(String, unique=True,index=True)
-    password = Column(String, index=True)
+    name = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    password = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column(Boolean, default=True)
 
-    resources = relationship("Resources", backref="owner", cascade="all, delete-orphan")
-    model = relationship("Model", backref="owner", cascade="all, delete-orphan")
-    orchestrator = relationship("Orchestrator", backref="owner",cascade= "all, delete-orphan") 
-
+    
+    resources = relationship("Resources", back_populates="owner", cascade="all, delete-orphan")
+    models = relationship("Model", back_populates="owner", cascade="all, delete-orphan")  
+    orchestrators = relationship("Orchestrator", back_populates="owner", cascade="all, delete-orphan")  
 
 
 class Resources(Base):
-    __tablename__="Resources"
+    __tablename__ = "resources"
     id = Column(Integer, primary_key=True, index=True)
-    user_id_resources = Column(Integer, ForeignKey("User.id"), primary_key=True)
-    nameResources= Column(String, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))  
+    name = Column(String, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    owner = relationship("User", back_populates="resources")
+
 
 class Model(Base):
-    __tablename__="Model"
+    __tablename__ = "models"
     id = Column(Integer, primary_key=True, index=True)
-    user_id_model = Column(Integer, ForeignKey("User.id"), primary_key=True)
-    nameModel = Column(String, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))  
+    name = Column(String, unique=True, index=True)
+
+    owner = relationship("User", back_populates="models")
+
 
 class Orchestrator(Base):
-    __tablename__="Orchestrator"
+    __tablename__ = "orchestrators"
     id = Column(Integer, primary_key=True, index=True)
-    user_id_orches = Column(Integer, ForeignKey("User.id"), primary_key=True)
-    nameOrchestrator = Column(String, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))  
+    name = Column(String, unique=True, index=True)
     agent = Column(String)
 
-
+    owner = relationship("User", back_populates="orchestrators")

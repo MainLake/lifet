@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from fastapi import Depends
 
 
-DATABASE_URL = "falta la base"
+DATABASE_URL = "postgresql://postgres:041130@localhost:5432/orquestador"
 
 engine = create_engine(DATABASE_URL)
 sessionMLocal = sessionmaker(autocommit=False, autoflush= False, bind=engine)
@@ -17,3 +17,4 @@ def get_db():
         yield db
     finally:
         db.close
+        

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from models import User,Model,Orchestrator,Resources
-from schemas import UserCreate, ResourceCreate, ModelCreate, OrchestratorCreate
+from Models.models import User,Model,Orchestrator,Resources
+from Models.schemas import *
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -85,3 +85,4 @@ def get_user_orchestrators(db: Session, user_id: int):
 
 def get_orchestrator(db: Session, orchestrator_id: int):
     return db.query(Orchestrator).filter(Orchestrator.id == orchestrator_id).first()
+
